@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Omni-Oracle | The Quantum Synthesizer</title>
-    <link href="[https://fonts.googleapis.com/css2?family=Syne+Mono&family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700&display=swap](https://fonts.googleapis.com/css2?family=Syne+Mono&family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700&display=swap)" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #03060d;
@@ -520,6 +520,13 @@
     };
 
     let discardedOpen = false;
+    let mouseEntropy = 0;
+    
+    // BIOMETRIC ENTROPY HARVEST: Tracks unique mouse pathing
+    window.addEventListener('mousemove', (e) => {
+        mouseEntropy = (mouseEntropy + (e.clientX * e.clientY)) % 1000000;
+    });
+
     function toggleDiscarded() {
         discardedOpen = !discardedOpen;
         document.getElementById('discarded-list').classList.toggle('open', discardedOpen);
@@ -557,7 +564,7 @@
         document.getElementById('bitstream').textContent = bits;
 
         // Labels
-        document.getElementById('entropy-src-label').textContent = 'SOURCE: ' + (isQuantum ? 'QUANTUM_HARDWARE' : 'LOCAL_PSEUDO');
+        document.getElementById('entropy-src-label').textContent = 'SOURCE: ' + (isQuantum ? 'QUANTUM_USER_HYBRID' : 'LOCAL_USER_HYBRID');
         document.getElementById('q-status').textContent = isQuantum ? 'ONLINE' : 'FALLBACK';
         document.getElementById('q-status').style.color = isQuantum ? 'var(--green)' : 'var(--amber)';
         document.getElementById('seed-hash').textContent = btoa(seeds.join('')).substring(0, 10);
@@ -566,12 +573,12 @@
     async function fetchAPI(type, seed) {
         try {
             if (type === 'wiki') {
-                const r = await fetch('[https://en.wikipedia.org/api/rest_v1/page/random/summary](https://en.wikipedia.org/api/rest_v1/page/random/summary)');
+                const r = await fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary');
                 const d = await r.json();
                 return { name: d.title.toUpperCase(), glyph:"📖", arc:"Discovery", desc: (d.extract?.split('.')[0] || 'An entity from the edge of knowledge') + '.' };
             }
             if (type === 'advice') {
-                const r = await fetch('[https://api.adviceslip.com/advice](https://api.adviceslip.com/advice)');
+                const r = await fetch('https://api.adviceslip.com/advice');
                 const d = await r.json();
                 return { name:"ORACLE FRAGMENT", glyph:"📜", arc:"Wisdom", desc: d.slip.advice };
             }
@@ -618,13 +625,23 @@
             `<div class="shard-loading"></div>`
         ).join('');
 
-        // Entropy
-        let seeds = Array.from({length: count}, () => Math.floor(Math.random() * 255));
+        // USER ENTROPY: Precise millisecond timestamp + Mouse Path XOR
+        const clickTime = Math.floor(performance.now() * 1000); 
+        let seeds = Array.from({length: count}, (v, i) => {
+            const localRand = Math.floor(Math.random() * 256);
+            const userPulse = (clickTime + mouseEntropy + i) % 256;
+            return localRand ^ userPulse;
+        });
+
         let isQuantum = false;
         try {
             const r = await fetch(`https://qrng.anu.edu.au/API/jsonI.php?length=${count}&type=uint8`);
             const d = await r.json();
-            if (d.data) { seeds = d.data; isQuantum = true; }
+            if (d.data) { 
+                // HYBRID SYNERGY: XORing Quantum Noise with User Entropy
+                seeds = d.data.map((q, i) => q ^ seeds[i]);
+                isQuantum = true; 
+            }
         } catch(e) {}
 
         updateEntropyViz(seeds, isQuantum);
@@ -668,7 +685,6 @@
         aiText.innerHTML = `<div class="thinking-row">TRIANGULATING NEURAL LINK...<div class="dots"><span></span><span></span><span></span></div></div>`;
 
         try {
-            // NEW FETCH TO YOUR BRIDGE (api/interpret.js)
             const res = await fetch('/api/interpret', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -692,7 +708,7 @@
             const sections = [
                 { label:'PATTERN', body: picked.pattern },
                 { label:'READING', body: picked.reading },
-                { label:'COMMAND',  body: picked.action  } // Key updated to COMMAND for mastery
+                { label:'COMMAND',  body: picked.action  } 
             ];
 
             for (let s = 0; s < sections.length; s++) {
@@ -707,16 +723,14 @@
                     const iv = setInterval(() => {
                         if (ci < body.length) { cur.before(document.createTextNode(body[ci++])); }
                         else { cur.remove(); clearInterval(iv); resolve(); }
-                    }, 12); // Slightly slower for surgical feel
+                    }, 12); 
                 });
                 if (s < sections.length - 1) await new Promise(r => setTimeout(r, 140));
             }
 
-            // Theme pills
             const themes = [...new Set(results.map(r => r.arc))];
             themePills.innerHTML = themes.map(t => `<span class="theme-pill">${t.toUpperCase()}</span>`).join('');
 
-            // Discarded
             const discarded = interpretations.filter((_, i) => i !== pickIndex);
             document.getElementById('disc-count').textContent = `(${discarded.length} PATHS NOT TAKEN)`;
             discList.innerHTML = discarded.map((d, i) => {
