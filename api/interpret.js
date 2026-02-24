@@ -1,15 +1,11 @@
 export default async function handler(req, res) {
-    // 1. Check Method
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: "MUST_USE_POST" });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ error: "USE_POST" });
 
     const { question, symbols } = req.body;
 
-    // 2. Check for API Key
+    // Verify key exists in Vercel Environment Variables
     if (!process.env.CLAUDE_KEY) {
-        console.error("CRITICAL: CLAUDE_KEY is missing from Vercel Environment Variables.");
-        return res.status(500).json({ error: "SERVER_CONFIG_ERROR", details: "API Key not found on server." });
+        return res.status(500).json({ error: "MISSING_KEY", message: "Add CLAUDE_KEY to Vercel." });
     }
 
     try {
@@ -21,14 +17,13 @@ export default async function handler(req, res) {
                 'content-type': 'application/json'
             },
             body: JSON.stringify({
-                model: "claude-3-5-sonnet-latest",
-                max_tokens: 1500,
+                model: "claude-sonnet-4-6", // UPGDATED TO 2026 STANDARD
+                max_tokens: 2000,
                 temperature: 0.8,
-                system: "You are the Sovereign's Shadow. Your logic is surgical, willful, and grounded. Return ONLY a JSON array. No preamble, no chat.",
+                system: "You are the Sovereign's Shadow. Return ONLY a raw JSON array of 7 distinct interpretations. No intro text.",
                 messages: [{
                     role: "user",
                     content: `INQUIRY: "${question}" | SIGNALS: [${symbols.join(', ')}]
-                    TASK: Return 7 objects in a JSON array. 
                     FORMAT: [{"pattern": "title", "reading": "logic", "action": "command"}]`
                 }]
             })
@@ -36,23 +31,17 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // 3. Handle Anthropic-specific errors (like 402 no money)
         if (data.error) {
-            console.error("ANTHROPIC_ERROR:", data.error);
-            return res.status(response.status).json({ error: data.error.type, message: data.error.message });
+            return res.status(response.status).json({ error: "API_ERROR", message: data.error.message });
         }
 
+        // Surgical JSON Extraction
         const rawText = data.content[0].text;
-        
-        // 4. Surgical JSON extraction (removes AI's conversational fluff if it exists)
-        const jsonStart = rawText.indexOf('[');
-        const jsonEnd = rawText.lastIndexOf(']') + 1;
-        const jsonString = rawText.substring(jsonStart, jsonEnd);
+        const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+        const finalData = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
 
-        res.status(200).json(JSON.parse(jsonString));
-
+        res.status(200).json(finalData);
     } catch (err) {
-        console.error("BRIDGE_CRASHED:", err.message);
-        res.status(500).json({ error: "INTERNAL_BRIDGE_COLLAPSE", details: err.message });
+        res.status(500).json({ error: "BRIDGE_COLLAPSE", details: err.message });
     }
 }
