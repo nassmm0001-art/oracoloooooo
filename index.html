@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni-Oracle | The Quantum Synthesizer</title>
+    <link href="[https://fonts.googleapis.com/css2?family=Syne+Mono&family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700&display=swap](https://fonts.googleapis.com/css2?family=Syne+Mono&family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700&display=swap)" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #03060d;
+            --surface: #060c17;
+            --surface2: #0a1220;
+            --cyan: #00e5ff;
+            --amber: #ffb547;
+            --red: #ff4757;
+            --green: #00ff9d;
+            --text: #7a9ab8;
+            --text-bright: #b8d4f0;
+            --white: #e0f0ff;
+            --border: rgba(0,229,255,0.07);
+            --border-mid: rgba(0,229,255,0.15);
+            --border-bright: rgba(0,229,255,0.35);
+            --glow: rgba(0,229,255,0.25);
+            --font-oracle: 'VT323', monospace;
+            --font-ui: 'Syne Mono', monospace;
+            --font-data: 'Share Tech Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-ui);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% -10%, rgba(0,140,200,0.38) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 90% 100%, rgba(0,80,160,0.30) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 35% at 75% 25%, rgba(20,80,140,0.20) 0%, transparent 50%),
+                radial-gradient(ellipse 30% 30% at 50% 55%, rgba(0,229,255,0.04) 0%, transparent 60%);
+            pointer-events: none; z-index: 0;
+            animation: nebula 14s ease-in-out infinite alternate;
+        }
+        @keyframes nebula {
+            0%   { transform: scale(1) translate(0,0); opacity: 1; }
+            50%  { transform: scale(1.04) translate(-6px,-10px); opacity: .82; }
+            100% { transform: scale(1) translate(0,0); opacity: 1; }
+        }
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.006) 2px, rgba(0,229,255,0.006) 4px);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── TOP BAR ── */
+        #topbar {
+            position: relative; z-index: 20;
+            background: rgba(0,0,0,0.82);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex; align-items: center;
+            height: 38px; flex-shrink: 0;
+            animation: dashIn .5s ease both;
+        }
+        @keyframes dashIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+        .topbar-brand {
+            font-family: var(--font-oracle); font-size: 22px;
+            color: var(--cyan); letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--cyan);
+            padding-right: 20px; margin-right: 20px;
+            border-right: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .topbar-stats {
+            display: flex; gap: 18px; align-items: center;
+            font-family: var(--font-data); font-size: 10px; color: #2a4060;
+            flex: 1;
+        }
+        .topbar-stat { display: flex; gap: 5px; align-items: center; }
+        .stat-val { color: var(--cyan); }
+        .stat-val.amber { color: var(--amber); }
+        .stat-val.green { color: var(--green); }
+        .live-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--green); box-shadow: 0 0 5px var(--green);
+            animation: livepulse 2s ease-in-out infinite;
+        }
+        @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+        /* ── CONTROLS ── */
+        .controls-bar {
+            position: relative; z-index: 10;
+            background: rgba(3,6,13,0.6);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 24px;
+            display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+            flex-shrink: 0;
+            animation: slideDown .6s .1s cubic-bezier(.22,1,.36,1) both;
+        }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+        .header-title {
+            font-family: var(--font-oracle);
+            font-size: clamp(1.8rem,3.5vw,2.8rem);
+            color: var(--white); letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(0,229,255,.25);
+            align-self: center; margin-right: 8px; flex-shrink: 0;
+            animation: glowBreathe 6s ease-in-out infinite;
+        }
+        @keyframes glowBreathe {
+            0%,100% { text-shadow: 0 0 15px rgba(0,229,255,.2); }
+            50%      { text-shadow: 0 0 40px rgba(0,229,255,.5), 0 0 80px rgba(0,229,255,.15); }
+        }
+        .header-title span { color: var(--cyan); }
+
+        .divider-v { width: 1px; height: 30px; background: var(--border); flex-shrink: 0; align-self: center; margin: 0 4px; }
+
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field-label { font-family: var(--font-data); font-size: 7px; letter-spacing: 3px; color: #1e3450; }
+
+        input[type="text"], select {
+            background: rgba(6,12,23,0.8);
+            color: var(--text-bright);
+            border: 1px solid #0d1e30;
+            border-radius: 2px;
+            padding: 7px 10px;
+            font-family: var(--font-ui); font-size: .82rem;
+            outline: none; transition: all .3s;
+        }
+        input[type="text"] { min-width: 240px; }
+        input[type="text"]::placeholder { color: #1a2d42; }
+        input:focus, select:focus { border-color: var(--border-mid); background: rgba(6,14,26,0.95); box-shadow: 0 0 0 2px rgba(0,229,255,.04); }
+        select { min-width: 175px; cursor: pointer; }
+        select option { background: #060e1a; }
+
+        .synth-btn {
+            background: transparent; color: var(--cyan);
+            border: 1px solid rgba(0,229,255,.3);
+            padding: 7px 20px;
+            font-family: var(--font-oracle); font-size: 18px; letter-spacing: 3px;
+            cursor: pointer; transition: all .3s;
+            border-radius: 2px; position: relative; overflow: hidden;
+            white-space: nowrap; align-self: flex-end; flex-shrink: 0;
+        }
+        .synth-btn::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(0,229,255,.1), rgba(0,229,255,.04));
+            transform: translateX(-100%); transition: transform .3s ease;
+        }
+        .synth-btn:hover { box-shadow: 0 0 24px var(--glow); color: #fff; transform: translateY(-1px); }
+        .synth-btn:hover::before { transform: translateX(0); }
+        .synth-btn:active { transform: translateY(1px); }
+        .synth-btn:disabled { opacity:.3; cursor:not-allowed; transform:none; }
+
+        /* ── MAIN 2-COL ── */
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            flex: 1;
+            min-height: 0;
+            position: relative; z-index: 1;
+        }
+
+        /* LEFT signals */
+        .signals-col {
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .col-header {
+            font-family: var(--font-data); font-size: 7px; letter-spacing: 4px;
+            color: #1e3450; padding: 10px 16px 8px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0; background: rgba(0,0,0,.3);
+        }
+        #output-grid {
+            flex: 1; overflow-y: auto;
+            padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
+        }
+        #output-grid::-webkit-scrollbar { width: 2px; }
+        #output-grid::-webkit-scrollbar-thumb { background: rgba(0,229,255,.12); }
+
+        .shard {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 8px 10px;
+            display: flex; align-items: center; gap: 9px;
+            transition: all .28s cubic-bezier(.23,1,.32,1);
+            animation: shardIn .45s ease both;
+            opacity: 0; flex-shrink: 0;
+        }
+        .shard:hover { border-color: var(--border-mid); background: var(--surface2); transform: translateX(3px); box-shadow: -2px 0 10px rgba(0,229,255,.07); }
+        @keyframes shardIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+        .shard-glyph { font-size: 1.4rem; flex-shrink: 0; width: 28px; text-align: center; }
+        .shard-info { flex: 1; min-width: 0; }
+        .shard-index { font-family: var(--font-data); font-size: 7px; color: #1e3450; }
+        .shard-value { font-family: var(--font-oracle); font-size: 16px; color: var(--white); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shard-arc { font-family: var(--font-data); font-size: 7px; color: var(--amber); opacity: .6; }
+        .shard-type-badge { font-family: var(--font-data); font-size: 6px; color: var(--cyan); opacity: .3; flex-shrink: 0; writing-mode: vertical-rl; }
+
+        .shard-loading { background: var(--surface); border: 1px solid var(--border); border-radius: 3px; height: 52px; display: flex; align-items: center; justify-content: center; animation: shimmer 1.4s ease-in-out infinite; flex-shrink: 0; }
+        @keyframes shimmer { 0%,100%{opacity:.15} 50%{opacity:.4} }
+
+        /* RIGHT interp */
+        .interp-col {
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .interp-inner {
+            flex: 1; overflow-y: auto;
+            padding: 10px 18px 14px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .interp-inner::-webkit-scrollbar { width: 2px; }
+        .interp-inner::-webkit-scrollbar-thumb { background: rgba(0,229,255,.12); }
+
+        #chosen-interp {
+            background: var(--surface);
+            border: 1px solid var(--border-mid);
+            border-radius: 3px;
+            padding: 16px 18px;
+            opacity: 0; transition: opacity .7s ease, transform .7s ease;
+            transform: translateY(8px); flex-shrink: 0;
+        }
+        #chosen-interp.visible { opacity: 1; transform: translateY(0); }
+
+        .chosen-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+            padding-bottom: 10px; border-bottom: 1px solid var(--border);
+        }
+        .chosen-badge { font-family: var(--font-oracle); font-size: 16px; color: var(--cyan); letter-spacing: 2px; text-shadow: 0 0 10px var(--cyan); }
+        .chosen-meta { font-family: var(--font-data); font-size: 7px; color: var(--amber); opacity: .55; letter-spacing: 2px; margin-left: auto; }
+
+        #ai-text { min-height: 30px; }
+        .section { margin-bottom: 12px; }
+        .section:last-child { margin-bottom: 0; }
+        .section-label { font-family: var(--font-data); font-size: 7px; letter-spacing: 4px; color: var(--cyan); opacity: .55; display: block; margin-bottom: 4px; }
+        .section-body { font-family: var(--font-oracle); font-size: 18px; color: var(--text-bright); line-height: 1.45; letter-spacing: .5px; }
+
+        .cursor-blink { display: inline-block; width: 2px; height: .85em; background: var(--cyan); margin-left: 2px; vertical-align: middle; animation: blink 1s step-end infinite; }
+        @keyframes blink { 50%{opacity:0} }
+
+        .thinking-row { display: flex; align-items: center; gap: 8px; color: var(--cyan); font-family: var(--font-data); font-size: 9px; letter-spacing: 3px; opacity: .6; }
+        .dots span { display: inline-block; width: 3px; height: 3px; background: var(--cyan); border-radius: 50%; margin: 0 2px; animation: dp 1.4s ease-in-out infinite; }
+        .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+        @keyframes dp{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+        #theme-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+        .theme-pill { background: rgba(0,229,255,.04); border: 1px solid rgba(0,229,255,.1); color: var(--cyan); font-family: var(--font-data); font-size: 7px; letter-spacing: 2px; padding: 2px 7px; border-radius: 20px; }
+
+        /* discarded */
+        #discarded-section { flex-shrink: 0; opacity: 0; transition: opacity .5s .3s ease; }
+        #discarded-section.visible { opacity: 1; }
+        .discarded-header { display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 7px; letter-spacing: 4px; color: #2a4060; cursor: pointer; padding: 8px 2px; border-top: 1px solid var(--border); transition: color .2s; user-select: none; }
+        .discarded-header:hover { color: var(--text); }
+        #discarded-list { display: flex; flex-direction: column; gap: 6px; overflow: hidden; max-height: 0; transition: max-height .5s cubic-bezier(.22,1,.36,1); }
+        #discarded-list.open { max-height: 4000px; }
+
+        .disc-card { background: rgba(6,12,23,.7); border: 1px solid var(--border); border-radius: 3px; padding: 10px 13px; transition: all .2s; }
+        .disc-card:hover { border-color: rgba(0,229,255,.1); }
+        .disc-num { font-family: var(--font-data); font-size: 7px; color: #1e3450; letter-spacing: 2px; margin-bottom: 5px; }
+        .disc-pattern { font-family: var(--font-oracle); font-size: 15px; color: var(--text); letter-spacing: .5px; margin-bottom: 4px; }
+        .disc-reading { font-family: var(--font-oracle); font-size: 14px; color: #445870; line-height: 1.4; margin-bottom: 5px; }
+        .disc-action { font-family: var(--font-data); font-size: 8px; letter-spacing: 2px; color: #3a5a48; padding-top: 5px; border-top: 1px solid rgba(0,229,255,.04); }
+        .disc-action::before { content: '↳ '; color: var(--green); opacity: .4; }
+
+        /* ── ENTROPY DASHBOARD ── */
+        #entropy-dash {
+            position: relative; z-index: 20;
+            background: rgba(0,0,0,.82);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border);
+            padding: 8px 24px;
+            display: flex; align-items: center; gap: 20px;
+            flex-shrink: 0; flex-wrap: wrap;
+            min-height: 56px;
+        }
+
+        .entropy-label { font-family: var(--font-data); font-size: 7px; letter-spacing: 4px; color: #1e3450; flex-shrink: 0; }
+
+        .entropy-sources { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        .esrc { display: flex; align-items: center; gap: 4px; font-family: var(--font-data); font-size: 8px; }
+        .esrc-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .esrc.quantum .esrc-dot { background: var(--cyan); box-shadow: 0 0 4px var(--cyan); }
+        .esrc.local   .esrc-dot { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+        .esrc.xor     .esrc-dot { background: var(--green); box-shadow: 0 0 4px var(--green); }
+        .esrc.quantum { color: var(--cyan); }
+        .esrc.local   { color: var(--amber); }
+        .esrc.xor     { color: var(--green); }
+
+        .edivider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+
+        /* seed bars */
+        .seed-viz { display: flex; gap: 2px; align-items: flex-end; height: 28px; width: 180px; flex-shrink: 0; }
+        .seed-bar { flex: 1; border-radius: 1px; transition: height .7s cubic-bezier(.23,1,.32,1), opacity .7s; min-height: 2px; }
+
+        /* entropy ring */
+        .entropy-ring-wrap { position: relative; width: 40px; height: 40px; flex-shrink: 0; }
+        .entropy-ring-wrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+        .ring-bg { fill: none; stroke: rgba(0,229,255,.06); stroke-width: 3; }
+        .ring-fill { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset .9s cubic-bezier(.23,1,.32,1), stroke .4s; }
+        .ring-val { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-data); font-size: 9px; color: var(--cyan); }
+
+        /* xor display */
+        .xor-display { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+        .xor-label { font-family: var(--font-data); font-size: 6px; letter-spacing: 3px; color: #1e3450; }
+        .xor-val { font-family: var(--font-oracle); font-size: 24px; color: var(--amber); letter-spacing: 2px; text-shadow: 0 0 8px rgba(255,181,71,.3); line-height: 1; }
+
+        /* bitstream */
+        .bitstream-wrap { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+        .bitstream-label { font-family: var(--font-data); font-size: 6px; letter-spacing: 3px; color: #1e3450; }
+        .bitstream { font-family: var(--font-data); font-size: 9px; color: rgba(0,229,255,.22); letter-spacing: 2px; white-space: nowrap; overflow: hidden; position: relative; }
+        .bitstream::after { content:''; position:absolute; right:0; top:0; bottom:0; width:40px; background: linear-gradient(to right, transparent, rgba(3,6,13,1)); }
+
+        .entropy-src-label { font-family: var(--font-data); font-size: 7px; color: #1e3450; flex-shrink: 0; margin-left: auto; }
+
+        .error-txt { color: var(--red); font-family: var(--font-data); font-size: 10px; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+<div id="topbar">
+    <div class="topbar-brand">OMNI-ORACLE</div>
+    <div class="topbar-stats">
+        <div class="topbar-stat"><div class="live-dot"></div><span>QUANTUM:</span><span class="stat-val green" id="q-status">STANDBY</span></div>
+        <div class="topbar-stat"><span>SEED:</span><span class="stat-val amber" id="seed-hash">---</span></div>
+        <div class="topbar-stat"><span>XOR:</span><span class="stat-val" id="topbar-xor">---</span></div>
+        <div class="topbar-stat"><span>INTERP:</span><span class="stat-val amber" id="interp-status">---</span></div>
+    </div>
+</div>
+
+<div class="controls-bar">
+    <div class="header-title">OMNI<span>-</span>ORACLE</div>
+    <div class="divider-v"></div>
+    <div class="field">
+        <span class="field-label">YOUR INQUIRY</span>
+        <input type="text" id="user-question" placeholder="What seeks your understanding...">
+    </div>
+    <div class="field">
+        <span class="field-label">SOURCE TYPE</span>
+        <select id="data-type">
+            <option value="chaos">🌀 PURE CHAOS (Mixed)</option>
+            <option value="tarot">🃏 TAROT (Major Arcana)</option>
+            <option value="zodiac">♈ ZODIAC & PLANETS</option>
+            <option value="runes">ᚱ ANCIENT RUNES</option>
+            <option value="city">🌍 REAL-WORLD CITIES</option>
+            <option value="wiki">📖 WIKIPEDIA ENTITIES</option>
+            <option value="advice">📜 UNIVERSAL WISDOM</option>
+            <option value="emojis">🔮 GLYPHS & EMOJIS</option>
+        </select>
+    </div>
+    <div class="field">
+        <span class="field-label">DRAW COUNT</span>
+        <select id="pull-count">
+            <option value="1">1 signal</option><option value="2">2 signals</option>
+            <option value="3" selected>3 signals</option><option value="4">4 signals</option>
+            <option value="5">5 signals</option><option value="6">6 signals</option>
+            <option value="7">7 signals</option><option value="8">8 signals</option>
+            <option value="9">9 signals</option><option value="10">10 signals</option>
+            <option value="11">11 signals</option><option value="12">12 signals</option>
+            <option value="13">13 signals</option><option value="14">14 signals</option>
+            <option value="15">15 signals</option><option value="16">16 signals</option>
+            <option value="17">17 signals</option><option value="18">18 signals</option>
+            <option value="19">19 signals</option><option value="20">20 signals</option>
+        </select>
+    </div>
+    <button class="synth-btn" id="synth-btn" onclick="synthesize()">◈ COLLAPSE REALITY</button>
+</div>
+
+<div class="main-content">
+
+    <div class="signals-col">
+        <div class="col-header">SIGNALS DRAWN</div>
+        <div id="output-grid">
+            <div style="font-family:var(--font-data);font-size:8px;color:#1e3450;letter-spacing:3px;padding:12px 4px;">AWAITING COLLAPSE...</div>
+        </div>
+    </div>
+
+    <div class="interp-col">
+        <div class="col-header">NEURAL SYNTHESIS</div>
+        <div class="interp-inner">
+
+            <div id="chosen-interp">
+                <div class="chosen-header">
+                    <span class="chosen-badge">◈ SELECTED INTERPRETATION</span>
+                    <span class="chosen-meta" id="chosen-meta"></span>
+                </div>
+                <div id="ai-text"></div>
+                <div id="theme-pills"></div>
+            </div>
+
+            <div id="discarded-section">
+                <div class="discarded-header" onclick="toggleDiscarded()">
+                    <span>DISCARDED INTERPRETATIONS</span>
+                    <span id="disc-count" style="color:var(--amber);font-size:8px;margin-left:4px;"></span>
+                    <span style="margin-left:auto;font-size:10px;" id="disc-toggle-icon">▼</span>
+                </div>
+                <div id="discarded-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<div id="entropy-dash">
+    <div class="entropy-label">ENTROPY VIZ</div>
+
+    <div class="entropy-sources">
+        <div class="esrc quantum"><div class="esrc-dot"></div>QUANTUM</div>
+        <div class="esrc local"><div class="esrc-dot"></div>LOCAL</div>
+        <div class="esrc xor"><div class="esrc-dot"></div>XOR</div>
+    </div>
+
+    <div class="edivider"></div>
+
+    <div class="entropy-ring-wrap">
+        <svg viewBox="0 0 40 40">
+            <circle class="ring-bg" cx="20" cy="20" r="16"/>
+            <circle class="ring-fill" id="entropy-ring" cx="20" cy="20" r="16"
+                stroke-dasharray="100.5" stroke-dashoffset="100.5"/>
+        </svg>
+        <div class="ring-val" id="ring-pct">0%</div>
+    </div>
+
+    <div class="xor-display">
+        <span class="xor-label">XOR SEED</span>
+        <span class="xor-val" id="xor-big">---</span>
+    </div>
+
+    <div class="edivider"></div>
+
+    <div class="seed-viz" id="seed-bars">
+        <div class="seed-bar" style="height:3px;background:var(--cyan);opacity:.15"></div>
+        <div class="seed-bar" style="height:3px;background:var(--cyan);opacity:.15"></div>
+        <div class="seed-bar" style="height:3px;background:var(--cyan);opacity:.15"></div>
+    </div>
+
+    <div class="edivider"></div>
+
+    <div class="bitstream-wrap">
+        <span class="bitstream-label">SEED BITSTREAM</span>
+        <div class="bitstream" id="bitstream">00000000 00000000 00000000</div>
+    </div>
+
+    <div class="entropy-src-label" id="entropy-src-label">SOURCE: AWAITING</div>
+</div>
+
+<script>
+    const Library = {
+        tarot: [
+            { name:"THE TOWER",        glyph:"⚡", arc:"Upheaval",       desc:"Sudden seismic change. False structures collapse." },
+            { name:"THE SUN",          glyph:"☀️", arc:"Radiance",       desc:"Clarity, vitality, and alignment with life force." },
+            { name:"THE MOON",         glyph:"🌑", arc:"Illusion",       desc:"The path through the unconscious. Reality shifts." },
+            { name:"THE WORLD",        glyph:"🌐", arc:"Completion",     desc:"Full integration. The cycle closes perfectly." },
+            { name:"DEATH",            glyph:"🩻", arc:"Transformation", desc:"The necessary composting of the obsolete." },
+            { name:"THE MAGICIAN",     glyph:"✦",  arc:"Manifestation",  desc:"All tools are already in your hands. Focus them." },
+            { name:"HIGH PRIESTESS",   glyph:"🌊", arc:"Mystery",        desc:"The answer lives below words. Listen inward." },
+            { name:"THE LOVERS",       glyph:"⚖️", arc:"Choice",         desc:"The deepest union requires full self-sacrifice." },
+            { name:"THE FOOL",         glyph:"∞",  arc:"Beginnings",     desc:"Leap into pure potentiality. No baggage allowed." },
+            { name:"THE HERMIT",       glyph:"🕯️", arc:"Guidance",       desc:"Your own lantern illuminates only the next step." },
+            { name:"THE STAR",         glyph:"★",  arc:"Hope",           desc:"Renewal has already begun. Trust the quiet light." },
+            { name:"JUDGEMENT",        glyph:"📯", arc:"Awakening",      desc:"You are being summoned toward your highest self." },
+            { name:"WHEEL OF FORTUNE", glyph:"☯",  arc:"Cycles",         desc:"The wheel turns. This moment is not permanent." },
+            { name:"STRENGTH",         glyph:"🦁", arc:"Courage",        desc:"The lion is befriended, not slain. Gentle power." },
+            { name:"THE CHARIOT",      glyph:"⚔️", arc:"Victory",        desc:"Opposing forces held together become momentum." },
+            { name:"THE HANGED MAN",   glyph:"🔄", arc:"Surrender",      desc:"New sight arrives only through voluntary release." },
+            { name:"THE EMPEROR",      glyph:"♜",  arc:"Structure",      desc:"Order from chaos. Build the foundation or lose it." },
+            { name:"THE EMPRESS",      glyph:"🌿", arc:"Abundance",      desc:"Organic growth cannot be rushed. Trust the process." },
+        ],
+        zodiac: [
+            { name:"ARIES",       glyph:"♈", arc:"Initiation",  desc:"The ram charges without looking back. First fire." },
+            { name:"SCORPIO",     glyph:"♏", arc:"Depth",        desc:"The scorpion transforms through the darkest water." },
+            { name:"PISCES",      glyph:"♓", arc:"Dissolution",  desc:"Two directions at once. Dream-logic rules." },
+            { name:"LIBRA",       glyph:"♎", arc:"Balance",      desc:"The scales never stop moving. Justice is a process." },
+            { name:"LEO",         glyph:"♌", arc:"Radiance",     desc:"The heart at the center of everything. Sovereign joy." },
+            { name:"CAPRICORN",   glyph:"♑", arc:"Ascension",    desc:"Slow, steady, inevitable. The mountain is patient." },
+            { name:"GEMINI",      glyph:"♊", arc:"Duality",      desc:"Two truths held simultaneously. The mind as mirror." },
+            { name:"CANCER",      glyph:"♋", arc:"Nurturing",    desc:"The crab carries its home everywhere it goes." },
+            { name:"SAGITTARIUS", glyph:"♐", arc:"Expansion",    desc:"The arrow flies before the archer knows the target." },
+            { name:"AQUARIUS",    glyph:"♒", arc:"Revolution",   desc:"The future arrives through you. Pour for all." },
+            { name:"TAURUS",      glyph:"♉", arc:"Endurance",    desc:"Root deep. The earth holds what the sky cannot." },
+            { name:"VIRGO",       glyph:"♍", arc:"Refinement",   desc:"The harvest is in the details you did not skip." },
+        ],
+        runes: [
+            { name:"FEHU",     glyph:"ᚠ", arc:"Abundance",    desc:"Cattle, currency, life-force. Circulate freely." },
+            { name:"HAGALAZ",  glyph:"ᚺ", arc:"Crisis",        desc:"Disruption as seed. The storm precedes the harvest." },
+            { name:"ISA",      glyph:"ᛁ", arc:"Stillness",     desc:"Everything frozen. Wait. The thaw will come." },
+            { name:"GEBO",     glyph:"ᚷ", arc:"Exchange",      desc:"All gifts demand an equal return. Reciprocity is sacred." },
+            { name:"THURISAZ", glyph:"ᚦ", arc:"Chaos",         desc:"A gate guarded by giants. Dangerous, necessary." },
+            { name:"ANSUZ",    glyph:"ᚨ", arc:"Signal",        desc:"Odin's breath. A message is already in transit." },
+            { name:"URUZ",     glyph:"ᚢ", arc:"Strength",      desc:"Wild, untamed power waiting to be directed." },
+            { name:"RAIDHO",   glyph:"ᚱ", arc:"Movement",      desc:"The road itself teaches. Trust the direction." },
+            { name:"KENAZ",    glyph:"ᚲ", arc:"Illumination",  desc:"Controlled fire reveals what the dark concealed." },
+        ],
+        emojis: [
+            { name:"VOLCANIC FORCE", glyph:"🌋", arc:"Eruption",    desc:"Pressure releases. Creation through destruction." },
+            { name:"FIRST SEED",     glyph:"🌱", arc:"Germination", desc:"Something new stirs in the dark beneath the ground." },
+            { name:"THE ALL-SEEING", glyph:"👁️", arc:"Awareness",   desc:"You are both the watcher and the watched." },
+            { name:"THE BOND",       glyph:"🤝", arc:"Alliance",    desc:"Strength through joining. Neither alone is whole." },
+            { name:"DEEP WAVE",      glyph:"🌊", arc:"Overwhelm",   desc:"You cannot fight it. You can only surf or drown." },
+            { name:"SACRED FIRE",    glyph:"🔥", arc:"Passion",     desc:"Purifying, consuming, and generative all at once." },
+            { name:"VOID MOON",      glyph:"🌑", arc:"Potential",   desc:"Before the first light. Everything is still possible." },
+            { name:"THE SPECTRUM",   glyph:"🌈", arc:"Integration", desc:"After the storm: all frequencies become visible." },
+            { name:"THE CRYSTAL",    glyph:"💎", arc:"Clarity",     desc:"Pressure over time produces something unbreakable." },
+            { name:"THE SPIRAL",     glyph:"🌀", arc:"Recursion",   desc:"The pattern repeats, but never at the same level." },
+        ]
+    };
+
+    let discardedOpen = false;
+    function toggleDiscarded() {
+        discardedOpen = !discardedOpen;
+        document.getElementById('discarded-list').classList.toggle('open', discardedOpen);
+        document.getElementById('disc-toggle-icon').textContent = discardedOpen ? '▲' : '▼';
+    }
+
+    function updateEntropyViz(seeds, isQuantum) {
+        const color = isQuantum ? 'var(--cyan)' : 'var(--amber)';
+
+        // Bars
+        const barsEl = document.getElementById('seed-bars');
+        barsEl.innerHTML = seeds.slice(0, 24).map(v => {
+            const h = Math.max(3, Math.round((v / 255) * 26));
+            const op = 0.25 + (v / 255) * 0.75;
+            return `<div class="seed-bar" style="height:${h}px;opacity:${op.toFixed(2)};background:${color}"></div>`;
+        }).join('');
+
+        // XOR
+        const xor = seeds.reduce((a, b) => a ^ b, 0);
+        document.getElementById('xor-big').textContent = xor;
+        document.getElementById('topbar-xor').textContent = xor;
+
+        // Ring — spread score
+        const mn = Math.min(...seeds), mx = Math.max(...seeds);
+        const spread = seeds.length > 1 ? (mx - mn) / 255 : xor / 255;
+        const pct = Math.round(spread * 100);
+        const circ = 100.5;
+        document.getElementById('entropy-ring').style.strokeDashoffset = circ - (pct / 100) * circ;
+        document.getElementById('entropy-ring').style.stroke = color;
+        document.getElementById('ring-pct').textContent = pct + '%';
+        document.getElementById('ring-pct').style.color = color;
+
+        // Bitstream
+        const bits = seeds.slice(0, 4).map(v => v.toString(2).padStart(8, '0')).join(' ');
+        document.getElementById('bitstream').textContent = bits;
+
+        // Labels
+        document.getElementById('entropy-src-label').textContent = 'SOURCE: ' + (isQuantum ? 'QUANTUM_HARDWARE' : 'LOCAL_PSEUDO');
+        document.getElementById('q-status').textContent = isQuantum ? 'ONLINE' : 'FALLBACK';
+        document.getElementById('q-status').style.color = isQuantum ? 'var(--green)' : 'var(--amber)';
+        document.getElementById('seed-hash').textContent = btoa(seeds.join('')).substring(0, 10);
+    }
+
+    async function fetchAPI(type, seed) {
+        try {
+            if (type === 'wiki') {
+                const r = await fetch('[https://en.wikipedia.org/api/rest_v1/page/random/summary](https://en.wikipedia.org/api/rest_v1/page/random/summary)');
+                const d = await r.json();
+                return { name: d.title.toUpperCase(), glyph:"📖", arc:"Discovery", desc: (d.extract?.split('.')[0] || 'An entity from the edge of knowledge') + '.' };
+            }
+            if (type === 'advice') {
+                const r = await fetch('[https://api.adviceslip.com/advice](https://api.adviceslip.com/advice)');
+                const d = await r.json();
+                return { name:"ORACLE FRAGMENT", glyph:"📜", arc:"Wisdom", desc: d.slip.advice };
+            }
+            if (type === 'city') {
+                const letters = 'aeiou';
+                const letter = letters[seed % letters.length];
+                const r = await fetch(`https://api.teleport.org/cities/?search=${letter}&limit=20`);
+                const d = await r.json();
+                const cities = d._embedded?.['city:search-results'] || [];
+                const city = cities[seed % Math.max(cities.length, 1)];
+                const name = (city?.matching_full_name || 'THE HIDDEN CITY').toUpperCase();
+                return { name, glyph:"🌍", arc:"Place", desc:`A confluence of energy at ${name}.` };
+            }
+        } catch(e) {}
+        return { name:"QUANTUM STATIC", glyph:"∿", arc:"Unknown", desc:"Signal lost. The void offered nothing." };
+    }
+
+    async function synthesize() {
+        const btn = document.getElementById('synth-btn');
+        const grid = document.getElementById('output-grid');
+        const chosenEl = document.getElementById('chosen-interp');
+        const aiText = document.getElementById('ai-text');
+        const chosenMeta = document.getElementById('chosen-meta');
+        const discSection = document.getElementById('discarded-section');
+        const discList = document.getElementById('discarded-list');
+        const themePills = document.getElementById('theme-pills');
+        const interpStatus = document.getElementById('interp-status');
+
+        btn.disabled = true;
+        chosenEl.classList.remove('visible');
+        discSection.classList.remove('visible');
+        discList.innerHTML = '';
+        discList.classList.remove('open');
+        discardedOpen = false;
+        document.getElementById('disc-toggle-icon').textContent = '▼';
+        themePills.innerHTML = '';
+        interpStatus.textContent = 'PROCESSING...';
+
+        const count = parseInt(document.getElementById('pull-count').value);
+        const type  = document.getElementById('data-type').value;
+        const question = document.getElementById('user-question').value.trim();
+
+        grid.innerHTML = Array.from({length: count}, () =>
+            `<div class="shard-loading"></div>`
+        ).join('');
+
+        // Entropy
+        let seeds = Array.from({length: count}, () => Math.floor(Math.random() * 255));
+        let isQuantum = false;
+        try {
+            const r = await fetch(`https://qrng.anu.edu.au/API/jsonI.php?length=${count}&type=uint8`);
+            const d = await r.json();
+            if (d.data) { seeds = d.data; isQuantum = true; }
+        } catch(e) {}
+
+        updateEntropyViz(seeds, isQuantum);
+        const entropySelector = seeds.reduce((a, b) => a ^ b, 0);
+
+        // Resolve items
+        const results = [];
+        const isAPI = ['wiki','advice','city'].includes(type);
+        const libKeys = Object.keys(Library);
+        for (let i = 0; i < count; i++) {
+            let item;
+            if (type === 'chaos') {
+                const lk = libKeys[seeds[i] % libKeys.length];
+                item = { ...Library[lk][seeds[i] % Library[lk].length], sourceType: lk };
+            } else if (isAPI) {
+                item = await fetchAPI(type, seeds[i]);
+                item.sourceType = type;
+            } else {
+                item = { ...Library[type][seeds[i] % Library[type].length], sourceType: type };
+            }
+            results.push(item);
+        }
+
+        // Render signal cards
+        grid.innerHTML = '';
+        results.forEach((item, i) => {
+            grid.innerHTML += `
+                <div class="shard" style="animation-delay:${i*0.07}s">
+                    <span class="shard-glyph">${item.glyph || '◈'}</span>
+                    <div class="shard-info">
+                        <div class="shard-index">SIG_${String(i+1).padStart(2,'0')}</div>
+                        <div class="shard-value">${item.name}</div>
+                        <div class="shard-arc">↳ ${item.arc}</div>
+                    </div>
+                    <div class="shard-type-badge">${item.sourceType}</div>
+                </div>`;
+        });
+
+        // Show loading
+        chosenEl.classList.add('visible');
+        aiText.innerHTML = `<div class="thinking-row">TRIANGULATING NEURAL LINK...<div class="dots"><span></span><span></span><span></span></div></div>`;
+
+        try {
+            // NEW FETCH TO YOUR BRIDGE (api/interpret.js)
+            const res = await fetch('/api/interpret', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: question,
+                    symbols: results.map(r => r.name)
+                })
+            });
+
+            if (!res.ok) throw new Error('LINK_REJECTED');
+
+            const interpretations = await res.json();
+            
+            const pickIndex = entropySelector % interpretations.length;
+            const picked = interpretations[pickIndex];
+
+            interpStatus.textContent = `${pickIndex+1} / ${interpretations.length}`;
+            chosenMeta.textContent = `INTERP ${pickIndex+1} OF ${interpretations.length} · SEED ${entropySelector}`;
+
+            aiText.innerHTML = '';
+            const sections = [
+                { label:'PATTERN', body: picked.pattern },
+                { label:'READING', body: picked.reading },
+                { label:'COMMAND',  body: picked.action  } // Key updated to COMMAND for mastery
+            ];
+
+            for (let s = 0; s < sections.length; s++) {
+                const { label, body } = sections[s];
+                const div = document.createElement('div'); div.className = 'section';
+                const lEl = document.createElement('span'); lEl.className = 'section-label'; lEl.textContent = label;
+                const bEl = document.createElement('div'); bEl.className = 'section-body';
+                div.appendChild(lEl); div.appendChild(bEl); aiText.appendChild(div);
+                const cur = document.createElement('span'); cur.className = 'cursor-blink'; bEl.appendChild(cur);
+                let ci = 0;
+                await new Promise(resolve => {
+                    const iv = setInterval(() => {
+                        if (ci < body.length) { cur.before(document.createTextNode(body[ci++])); }
+                        else { cur.remove(); clearInterval(iv); resolve(); }
+                    }, 12); // Slightly slower for surgical feel
+                });
+                if (s < sections.length - 1) await new Promise(r => setTimeout(r, 140));
+            }
+
+            // Theme pills
+            const themes = [...new Set(results.map(r => r.arc))];
+            themePills.innerHTML = themes.map(t => `<span class="theme-pill">${t.toUpperCase()}</span>`).join('');
+
+            // Discarded
+            const discarded = interpretations.filter((_, i) => i !== pickIndex);
+            document.getElementById('disc-count').textContent = `(${discarded.length} PATHS NOT TAKEN)`;
+            discList.innerHTML = discarded.map((d, i) => {
+                const realIdx = interpretations.indexOf(d) + 1;
+                return `<div class="disc-card">
+                    <div class="disc-num">INTERP_${String(realIdx).padStart(2,'0')}</div>
+                    <div class="disc-pattern">${d.pattern}</div>
+                    <div class="disc-reading">${d.reading}</div>
+                    <div class="disc-action">↳ ${d.action}</div>
+                </div>`;
+            }).join('');
+
+            discSection.classList.add('visible');
+            interpStatus.textContent = 'LINK_STABLE';
+
+        } catch(e) {
+            console.error(e);
+            aiText.innerHTML = `<span class="error-txt">⚠ NEURAL_LINK_FAILURE — RECHARGE API CREDITS OR CHECK BRIDGE CONFIG</span>`;
+            interpStatus.textContent = 'OFFLINE';
+        }
+
+        btn.disabled = false;
+    }
+</script>
+</body>
+</html>
